@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Train Smart">
+<meta name="theme-color" content="#0e0e0e">
+<title>Train Smart</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+:root{
+  --green:#c8f044;
+  --green-dim:#3d5e00;
+  --green-bg:#1c2e00;
+  --bg:#0e0e0e;
+  --surface:#111;
+  --card:#1a1a1a;
+  --card2:#222;
+  --border:#2a2a2a;
+  --border2:#1e1e1e;
+  --text:#e8e8e8;
+  --text2:#aaa;
+  --text3:#666;
+  --text4:#444;
+  --nav-h:64px;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;overflow:hidden;}
+#app{height:100%;display:flex;flex-direction:column;}
+.screen{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--nav-h) + 12px);-webkit-overflow-scrolling:touch;}
+.screen::-webkit-scrollbar{display:none;}
+
+/* STATUS BAR */
+.status-bar{display:flex;justify-content:space-between;align-items:center;padding:env(safe-area-inset-top,14px) 20px 6px;background:var(--surface);position:sticky;top:0;z-index:10;}
+.status-time{font-size:13px;font-weight:600;color:#fff;}
+.status-right{font-size:11px;color:var(--text3);}
+
+/* NAV */
+.bottom-nav{display:flex;background:var(--surface);border-top:0.5px solid var(--border2);padding:8px 0 calc(env(safe-area-inset-bottom,8px) + 4px);position:fixed;bottom:0;left:0;right:0;z-index:20;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0;}
+.nav-icon{font-size:20px;color:var(--text4);transition:color .15s;}
+.nav-icon.on{color:var(--green);}
+.nav-lbl{font-size:10px;color:var(--text4);transition:color .15s;}
+.nav-lbl.on{color:var(--green);}
+
+/* VIEWS */
+.view{display:none;}
+.view.active{display:block;}
+
+/* HEADER */
+.app-eyebrow{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);}
+.app-title{font-size:26px;font-weight:500;color:#fff;line-height:1.15;}
+.app-title .hi{color:var(--green);}
+.page-header{padding:16px 20px 0;}
+
+/* WEEK STRIP */
+.week-strip{display:flex;gap:6px;padding:14px 20px 0;overflow-x:auto;}
+.week-strip::-webkit-scrollbar{display:none;}
+.day-pill{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 10px;border-radius:12px;background:var(--card);border:0.5px solid var(--border);min-width:44px;cursor:pointer;flex-shrink:0;transition:all .15s;}
+.day-pill.active{background:var(--green);border-color:var(--green);}
+.day-pill-lbl{font-size:9px;color:var(--text3);letter-spacing:.04em;}
+.day-pill.active .day-pill-lbl{color:var(--green-dim);}
+.day-pill-abbr{font-size:13px;font-weight:500;color:#fff;}
+.day-pill.active .day-pill-abbr{color:#0d1a00;}
+.day-pill-type{font-size:9px;color:var(--text4);}
+.day-pill.active .day-pill-type{color:var(--green-dim);}
+.day-pill.mma-day .day-pill-abbr{color:#a78bfa;}
+.day-pill.rest-day .day-pill-abbr{color:var(--text3);}
+
+/* SESSION CARD */
+.session-card{margin:14px 20px 0;background:var(--card);border-radius:20px;overflow:hidden;border:0.5px solid var(--border);}
+.session-banner{background:var(--green-bg);padding:16px 18px;border-bottom:0.5px solid #2a3a00;}
+.session-tag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:4px;}
+.session-name{font-size:20px;font-weight:500;color:#fff;}
+.session-meta{font-size:12px;color:var(--text3);margin-top:3px;}
+
+.block-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);padding:10px 18px 4px;background:var(--card);}
+.ex-item{display:flex;align-items:flex-start;gap:10px;padding:10px 18px;border-bottom:0.5px solid var(--border2);background:var(--card);}
+.ex-item:last-child{border-bottom:none;}
+.ex-num{width:24px;height:24px;border-radius:7px;background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text3);flex-shrink:0;margin-top:1px;}
+.ex-body{flex:1;}
+.ex-name{font-size:13px;font-weight:500;color:var(--text);}
+.ex-sets{font-size:11px;color:var(--text3);margin-top:2px;line-height:1.4;}
+.ex-note{font-size:11px;color:var(--text4);margin-top:4px;line-height:1.4;display:none;}
+.ex-item.expanded .ex-note{display:block;}
+.ex-item.expanded .ex-num{background:var(--green-bg);color:var(--green);}
+.warmup-box{margin:14px 20px 0;background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:12px 14px;}
+.warmup-label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.warmup-text{font-size:12px;color:var(--text2);line-height:1.6;}
+
+/* REST / MMA DAY */
+.rest-card{margin:14px 20px 0;background:var(--card);border:0.5px solid var(--border);border-radius:20px;padding:20px 18px;text-align:center;}
+.rest-icon{font-size:36px;margin-bottom:8px;}
+.rest-title{font-size:18px;font-weight:500;color:#fff;margin-bottom:4px;}
+.rest-sub{font-size:13px;color:var(--text3);line-height:1.6;}
+
+/* NUTRITION VIEW */
+.day-type-row{display:flex;gap:8px;padding:14px 20px 0;overflow-x:auto;}
+.day-type-row::-webkit-scrollbar{display:none;}
+.dtype-btn{padding:6px 16px;border-radius:99px;border:0.5px solid var(--border);background:var(--card);font-size:12px;color:var(--text3);cursor:pointer;flex-shrink:0;white-space:nowrap;}
+.dtype-btn.active{background:var(--green);border-color:var(--green);color:#0d1a00;font-weight:500;}
+.macro-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:14px 20px 0;}
+.mac{background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:12px 14px;}
+.mac-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px;}
+.mac-val{font-size:20px;font-weight:500;color:#fff;}
+.mac-sub{font-size:11px;color:var(--text4);margin-top:1px;}
+.meal-card{margin:10px 20px 0;background:var(--card);border:0.5px solid var(--border);border-radius:16px;overflow:hidden;}
+.meal-header{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;}
+.meal-time{font-size:10px;padding:2px 8px;border-radius:99px;background:var(--green-bg);color:var(--green);white-space:nowrap;font-weight:500;}
+.meal-name{font-size:13px;font-weight:500;flex:1;color:var(--text);}
+.meal-kcal{font-size:11px;color:var(--text3);}
+.meal-chevron{font-size:14px;color:var(--text4);transition:transform .2s;}
+.meal-body{display:none;border-top:0.5px solid var(--border2);}
+.meal-card.open .meal-body{display:block;}
+.meal-card.open .meal-chevron{transform:rotate(180deg);}
+.food-row{display:flex;justify-content:space-between;align-items:flex-start;padding:8px 14px;border-bottom:0.5px solid var(--border2);gap:8px;}
+.food-row:last-child{border-bottom:none;}
+.food-name{font-size:13px;color:var(--text);}
+.food-macros{font-size:11px;color:var(--text3);margin-top:2px;}
+.food-amount{font-size:12px;color:var(--text3);white-space:nowrap;}
+.meal-note-box{margin:6px 14px 10px;background:var(--green-bg);border-radius:8px;padding:7px 10px;font-size:11px;color:#8db832;line-height:1.5;}
+
+/* PROGRESS VIEW */
+.phase-card{margin:14px 20px 0;background:var(--card);border:0.5px solid var(--border);border-radius:16px;padding:14px 16px;}
+.phase-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.phase-num{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;}
+.phase-badge{font-size:10px;padding:2px 8px;border-radius:99px;background:var(--green-bg);color:var(--green);}
+.phase-name{font-size:16px;font-weight:500;color:#fff;margin-bottom:2px;}
+.phase-weeks{font-size:12px;color:var(--text3);margin-bottom:10px;}
+.phase-bar{height:4px;background:var(--card2);border-radius:2px;overflow:hidden;margin-bottom:10px;}
+.phase-bar-fill{height:100%;background:var(--green);border-radius:2px;}
+.phase-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.pstat{background:var(--card2);border-radius:10px;padding:8px 10px;}
+.pstat-lbl{font-size:10px;color:var(--text3);margin-bottom:2px;}
+.pstat-val{font-size:13px;font-weight:500;color:var(--text);}
+.rule-section{margin:14px 20px 0;}
+.rule-section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.rule-card{background:var(--card);border:0.5px solid var(--border);border-radius:14px;margin-bottom:8px;overflow:hidden;}
+.rule-card-header{display:flex;align-items:center;gap:8px;padding:11px 14px;cursor:pointer;}
+.rule-card-title{font-size:13px;font-weight:500;color:var(--text);flex:1;}
+.rule-card-body{display:none;padding:4px 14px 12px;}
+.rule-card.open .rule-card-body{display:block;}
+.rule-card.open .rule-chevron{transform:rotate(180deg);}
+.rule-chevron{font-size:14px;color:var(--text4);transition:transform .2s;}
+.rule-item{display:flex;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border2);}
+.rule-item:last-child{border-bottom:none;}
+.rule-dot{width:5px;height:5px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:6px;}
+.rule-text{font-size:12px;color:var(--text2);line-height:1.5;}
+
+/* DELOAD VIEW */
+.deload-banner{margin:14px 20px 0;background:var(--green-bg);border:0.5px solid #3a5200;border-radius:16px;padding:14px 16px;}
+.deload-banner-title{font-size:16px;font-weight:500;color:var(--green);margin-bottom:4px;}
+.deload-banner-sub{font-size:12px;color:#8db832;line-height:1.5;}
+.deload-weeks{display:flex;gap:8px;padding:14px 20px 0;overflow-x:auto;}
+.deload-weeks::-webkit-scrollbar{display:none;}
+.dwk{padding:6px 16px;border-radius:99px;border:0.5px solid var(--border);background:var(--card);font-size:12px;color:var(--text3);cursor:pointer;flex-shrink:0;}
+.dwk.active{background:var(--green);border-color:var(--green);color:#0d1a00;font-weight:500;}
+.deload-session{margin:12px 20px 0;background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:14px 16px;}
+.deload-session-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:10px;}
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:0.5px solid var(--border2);}
+.check-item:last-child{border-bottom:none;}
+.check-box{width:18px;height:18px;border-radius:5px;border:0.5px solid var(--border);background:var(--card2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:1px;}
+.check-box.checked{background:var(--green);border-color:var(--green);}
+.check-tick{font-size:11px;color:#0d1a00;display:none;}
+.check-box.checked .check-tick{display:block;}
+.check-text{font-size:12px;color:var(--text2);line-height:1.5;}
+.signal-card{margin:12px 20px 0;background:var(--card);border:0.5px solid var(--border);border-radius:14px;padding:14px 16px;}
+.signal-title{font-size:12px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;}
+.signal-item{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:0.5px solid var(--border2);}
+.signal-item:last-child{border-bottom:none;}
+.signal-dot{width:6px;height:6px;border-radius:50%;background:#f87171;flex-shrink:0;margin-top:5px;}
+.signal-text{font-size:12px;color:var(--text2);line-height:1.5;}
+
+.section-gap{height:10px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="screen" id="mainScreen">
+    <div class="status-bar">
+      <span class="status-time" id="clock">9:41</span>
+      <span class="status-right">Train Smart</span>
+    </div>
+
+    <!-- WORKOUT VIEW -->
+    <div class="view active" id="view-workout">
+      <div class="page-header">
+        <div class="app-eyebrow">Your programme</div>
+        <div class="app-title">Train <span class="hi">smart.</span></div>
+      </div>
+      <div class="week-strip" id="weekStrip"></div>
+      <div id="sessionContent"></div>
+    </div>
+
+    <!-- NUTRITION VIEW -->
+    <div class="view" id="view-nutrition">
+      <div class="page-header">
+        <div class="app-eyebrow">Daily nutrition</div>
+        <div class="app-title">Eat <span class="hi">right.</span></div>
+      </div>
+      <div class="day-type-row" id="dtypeRow">
+        <button class="dtype-btn active" onclick="showNutrition('gym')">Gym day</button>
+        <button class="dtype-btn" onclick="showNutrition('mma')">MMA day</button>
+        <button class="dtype-btn" onclick="showNutrition('rest')">Rest day</button>
+      </div>
+      <div id="nutritionContent"></div>
+    </div>
+
+    <!-- PROGRESS VIEW -->
+    <div class="view" id="view-progress">
+      <div class="page-header">
+        <div class="app-eyebrow">24-week roadmap</div>
+        <div class="app-title">Level <span class="hi">up.</span></div>
+      </div>
+      <div id="progressContent"></div>
+    </div>
+
+    <!-- DELOAD VIEW -->
+    <div class="view" id="view-deload">
+      <div class="page-header">
+        <div class="app-eyebrow">Recovery protocol</div>
+        <div class="app-title">Recover <span class="hi">hard.</span></div>
+      </div>
+      <div id="deloadContent"></div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-item" onclick="switchView('workout')">
+      <span class="nav-icon on" id="ni-workout">📅</span>
+      <span class="nav-lbl on" id="nl-workout">Workout</span>
+    </div>
+    <div class="nav-item" onclick="switchView('nutrition')">
+      <span class="nav-icon" id="ni-nutrition">🥗</span>
+      <span class="nav-lbl" id="nl-nutrition">Nutrition</span>
+    </div>
+    <div class="nav-item" onclick="switchView('progress')">
+      <span class="nav-icon" id="ni-progress">📈</span>
+      <span class="nav-lbl" id="nl-progress">Progress</span>
+    </div>
+    <div class="nav-item" onclick="switchView('deload')">
+      <span class="nav-icon" id="ni-deload">⚡</span>
+      <span class="nav-lbl" id="nl-deload">Deload</span>
+    </div>
+  </nav>
+</div>
+
+<script>
+const WEEK = [
+  {day:'Sun',type:'rest',label:'R'},
+  {day:'Mon',type:'gym',label:'G',sessionIdx:0},
+  {day:'Tue',type:'gym',label:'G',sessionIdx:1},
+  {day:'Wed',type:'mma',label:'M'},
+  {day:'Thu',type:'gym',label:'G',sessionIdx:2},
+  {day:'Fri',type:'mma',label:'M'},
+  {day:'Sat',type:'gym',label:'G',sessionIdx:3},
+];
+
+const SESSIONS = [
+  {
+    tag:'Monday · Lower body power',
+    name:'Power + Strength',
+    meta:'65–75 min · 4 blocks · ATF gym',
+    warmup:'5 min rowing machine easy → hip circles + leg swings ×10 each → ankle rotations → 2×8 goblet squat @20kg',
+    blocks:[
+      {label:'Power block (15 min)',exs:[
+        {n:'Box jump',s:'4 × 5 — max height, full reset each rep',note:'Start at 50cm. Stick the landing, absorb through hips. Progress height weekly not reps.'},
+        {n:'Zercher squat',s:'4 × 5 @ RPE 8 — 90s rest',note:'Bar in crook of elbows. Drives anterior core, upper back, and quads. Add weight when you hit 4×5 cleanly.'},
+      ]},
+      {label:'Strength block (25 min)',exs:[
+        {n:'Explosive barbell split squat',s:'3 × 6 each leg — explode up, 3 sec down',note:'Superset with 6 plyo jumping lunges each side. 60s rest between supersets.'},
+        {n:'Single-leg goblet squat (bench support)',s:'3 × 8 each side — 3 sec eccentric',note:'Full depth. Use adjustable bench for support. Great unilateral knee stability for MMA.'},
+        {n:'Romanian deadlift',s:'3 × 8 @ RPE 7 — feel the hamstring load',note:'Hip hinge. Barbell preferred. Control the descent. Do not round the lower back.'},
+        {n:'Lying leg curl',s:'3 × 10–12 — 3 sec eccentric, pause at top',note:'ADDED BACK. Knee flexion hamstring work — critical for MMA hamstring injury prevention.'},
+      ]},
+      {label:'Calf + ankle (8 min)',exs:[
+        {n:'Smith machine calf raise',s:'3 × 12–15 — 3 sec down, pause at bottom',note:'Eccentric focus for Achilles tendon health. Progress reps to 20 before adding weight.'},
+        {n:'Knee drive jump → toe tap on bumper plate',s:'3 × 6 each side — reactive, reset between reps',note:'Lower abs + hip flexors + ankle stiffness. Athletic and specific to MMA footwork.'},
+      ]},
+      {label:'Core (10 min)',exs:[
+        {n:'Ab wheel rollout',s:'3 × 8–10 — full extension if form holds',note:'Start from knees. Progress to full standing rollout over weeks.'},
+        {n:'Dead bug',s:'3 × 8 each side — slow and deliberate',note:'Anti-rotation core. Opposite arm + leg lower together. Lower back stays flat.'},
+        {n:'Saddle bag walking lunge',s:'2 × 30m — 20–25kg bag',note:'End of session when pre-fatigued. Harder adaptation. Steady pace, full stride.'},
+      ]},
+    ]
+  },
+  {
+    tag:'Tuesday · Push + Triceps',
+    name:'Push Power',
+    meta:'65–75 min · 3 blocks + finisher · ATF gym',
+    warmup:'Band pull-aparts 2×15 → shoulder circles → incline bar warm-up 2×10 @50% → 1 set dips ×10 bodyweight',
+    blocks:[
+      {label:'Power complex (20 min)',exs:[
+        {n:'Deadlift → power clean → push press',s:'4 × 4 — maximal intent each rep',note:'Full triple extension on the clean. Rest 2 min between sets — CNS demanding. Your favourite complex.'},
+        {n:'DB incline chest press',s:'4 × 6–8 @ RPE 8–9 — true failure on last set',note:'3 sec eccentric. No bounce off chest. Primary upper chest builder.'},
+        {n:'Parallel bar dips',s:'3 × 8–10 — lean forward for chest',note:'Add belt weight when bodyweight is too easy across all sets.'},
+      ]},
+      {label:'Tricep focus (15 min)',exs:[
+        {n:'Cable overhead tricep extension (rope)',s:'3 × 12–15 — long head emphasis',note:'Full stretch at top. MMA punching power lives in the long head. Do not rush the eccentric.'},
+        {n:'EZ bar skull crusher',s:'3 × 10 → drop set ×8 lighter on last set',note:'Drop set on final set only. Keep throughout the phase for consistency.'},
+        {n:'Cable pushdown (straight bar)',s:'2 × 15 — squeeze at bottom',note:'Finishing move. 30–45s rest. Gets total tricep volume up.'},
+      ]},
+      {label:'Shoulder weak points (15 min)',exs:[
+        {n:'Landmine single-arm press',s:'3 × 8 each arm — drive from hip',note:'Rotational pressing = MMA specific. Great for overhead stability and shoulder health.'},
+        {n:'Cable lateral raise',s:'3 × 15 — slow and controlled',note:'Side delts for shoulder width. Cable stays tensioned at bottom unlike DB.'},
+        {n:'Face pull (rope)',s:'3 × 15 — external rotation at end range',note:'Non-negotiable every push session. Rear delts + rotator cuff health. Do this forever.'},
+      ]},
+      {label:'Conditioning (10 min)',exs:[
+        {n:'Assault bike — alactate protocol',s:'8–10 rounds × 10s all-out / 50s full rest',note:'Max power each sprint. Round 8 should feel the same effort as round 1 — if it does not, you held back.'},
+      ]},
+    ]
+  },
+  {
+    tag:'Thursday · Pull + Biceps',
+    name:'Pull Power',
+    meta:'65–75 min · 3 blocks · ATF gym',
+    warmup:'5 min row → scapular pull-ups ×10 → band face pulls 2×15 → dead hang 30s → 2×5 pull-up warm-up',
+    blocks:[
+      {label:'Back — width + thickness (25 min)',exs:[
+        {n:'Weighted pull-up',s:'4 × 6–8 — add load via belt at 4×8',note:'Wide grip for lat width, neutral for thickness. Your favourite. Make this the centrepiece.'},
+        {n:'Landmine row (single arm)',s:'3 × 8 each side',note:'Keep elbow close. Drive elbow to hip, not just up. Great lat and mid-back stimulus.'},
+        {n:'Cable lat pulldown (wide grip)',s:'3 × 10–12 — full stretch at top',note:'Back-off volume after pull-ups. Feel the lat lengthen. Do not swing.'},
+        {n:'Barbell bent-over row',s:'3 × 8 @ RPE 8 — strict form',note:'Horizontal pull. Completes back with both vertical and horizontal stimulus.'},
+      ]},
+      {label:'Bicep focus (15 min)',exs:[
+        {n:'Incline DB curl',s:'3 × 10–12 — 3 sec eccentric',note:'Arms back on incline bench = long head stretch. Best mass builder. Slow down.'},
+        {n:'Hammer curl → reverse curl superset',s:'3 × 10 each back to back',note:'Brachialis + forearm = MMA grip and punch resistance. Do not skip reverse curl.'},
+        {n:'Cable curl',s:'2 × 15 — drop set on last set',note:'Full stretch at bottom. Arms will be done after this.'},
+      ]},
+      {label:'KB complex + conditioning (15 min)',exs:[
+        {n:'KB swing → clean → snatch (continuous)',s:'4 rounds × 5 each movement per arm',note:'Posterior chain, hip explosion, grip endurance. Rest 90s between rounds.'},
+        {n:'Rowing machine intervals',s:'6 rounds × 30s hard / 30s easy',note:'Damper on 5–6. Full leg drive. Cardiovascular and postural endurance.'},
+      ]},
+    ]
+  },
+  {
+    tag:'Saturday · Full body + Abs',
+    name:'Full Body + Mobility',
+    meta:'70–80 min · 4 blocks · ATF gym',
+    warmup:'Jump rope or ski erg 5 min → thoracic rotations ×10 → world\'s greatest stretch ×5 each side → med ball slam 2×5',
+    blocks:[
+      {label:'Explosive full body (20 min)',exs:[
+        {n:'Med ball explosive push (lying bridge)',s:'4 × 6 — maximal intent, reset each rep',note:'Horizontal power. Straight-arm punch into ball. MMA striking mechanics.'},
+        {n:'KB clean + press — single arm',s:'3 × 6 each side',note:'Full body power. Hip to overhead in one motion. Very MMA specific.'},
+        {n:'Broad jump → 10m sprint',s:'4 × 3 jumps — walk back as rest',note:'Horizontal power and acceleration. Track your distance — aim to beat it weekly.'},
+      ]},
+      {label:'Shoulders — weak point (15 min)',exs:[
+        {n:'Overhead barbell press',s:'3 × 8 — full lockout overhead',note:'Not in original plan. Builds shoulder mass and overhead strength. Add 2.5kg at 3×8.'},
+        {n:'Rear delt DB fly',s:'4 × 15 — squeeze at end range',note:'Rear delts protect rotator cuff in guard position and when defending shots.'},
+        {n:'Cable upright row',s:'2 × 12 — elbow above wrist',note:'Side and rear delt combination. Constant cable tension. Do not go heavy.'},
+      ]},
+      {label:'Full abs block (20 min)',exs:[
+        {n:'Landmine rotation',s:'3 × 10 each side — hip-driven',note:'MMA gold. Rotational power = punching, clinch, takedown defence. Most sport-specific ab exercise.'},
+        {n:'Hanging leg raise',s:'3 × 12–15 — slow, no swing',note:'Lower abs specifically. Add ankle weights when 3×15 is easy. Toes to bar is the goal.'},
+        {n:'Pallof press',s:'3 × 12 each side — resist rotation',note:'Anti-rotation stability. Pairs with landmine for complete rotational training.'},
+        {n:'Ab wheel rollout',s:'3 × 8–10 — full extension',note:'Full anterior chain. Progress to standing rollout over the programme.'},
+        {n:'RKC plank',s:'2 × 20–30s — squeeze everything',note:'Glutes, abs, quads all contracted. Much harder than standard plank. Max tension.'},
+      ]},
+      {label:'Mobility + cool-down (10 min)',exs:[
+        {n:'Hip 90/90 stretch',s:'90s each side — shift between positions',note:'MMA hips take a beating. This undoes it. Do every Saturday without skipping.'},
+        {n:'Thoracic extension over foam roller',s:'2 min — roll slowly up spine',note:'Office posture + heavy lifting = stiff thoracic. Weekly maintenance.'},
+        {n:'Shoulder cross-body + sleeper stretch',s:'60s each side each stretch',note:'Guard posture shortens internal rotators. Restores range for punching mechanics.'},
+        {n:'Pigeon pose or figure-4 stretch',s:'90s each side',note:'Hip external rotation. Carries over to kicking, clinch, and guard recovery.'},
+      ]},
+    ]
+  }
+];
+
+const NUTRITION = {
+  gym:{
+    kcal:2350,p:175,c:240,f:60,
+    meals:[
+      {time:'6:30 AM',name:'Pre-gym fuel',kcal:520,foods:[
+        {n:'Rolled oats',m:'P 7g · C 35g · F 4g',a:'80g dry'},
+        {n:'Whole eggs',m:'P 18g · C 0g · F 10g',a:'3 eggs'},
+        {n:'Banana',m:'P 1g · C 27g · F 0g',a:'1 medium'},
+        {n:'Mixed seeds (pumpkin + sunflower)',m:'P 5g · C 4g · F 7g',a:'20g'},
+      ],note:'Eat 60–75 min before gym. Oats for sustained energy, eggs for protein. No nuts here — slow digestion.'},
+      {time:'Post-gym',name:'Recovery meal',kcal:420,foods:[
+        {n:'Super You protein shake',m:'P 28g · C 5g · F 3g',a:'1 scoop'},
+        {n:'Banana or pomegranate',m:'P 1g · C 28g · F 0g',a:'1 medium'},
+        {n:'Boiled white rice',m:'P 4g · C 45g · F 0g',a:'150g cooked'},
+      ],note:'Within 30 min of finishing. Shake + fruit first if you cannot cook immediately. Rice replenishes glycogen.'},
+      {time:'1:00 PM',name:'Lunch — main protein meal',kcal:580,foods:[
+        {n:'Chicken breast or fish fillet (grilled)',m:'P 45g · C 0g · F 5g',a:'200g'},
+        {n:'Brown rice or jowar roti',m:'P 5g · C 50g · F 2g',a:'150g / 2 rotis'},
+        {n:'Stir-fried local vegetables',m:'P 4g · C 12g · F 3g',a:'150g'},
+        {n:'Curd (plain, full fat)',m:'P 5g · C 4g · F 4g',a:'100g'},
+      ],note:'Biggest meal. Eat protein and veg before the carbs. Curd adds probiotics and aids protein absorption.'},
+      {time:'4:30 PM',name:'Mid-afternoon snack',kcal:310,foods:[
+        {n:'Mixed nuts (almonds, walnuts, cashews)',m:'P 6g · C 8g · F 16g',a:'30g'},
+        {n:'Pomegranate or seasonal fruit',m:'P 1g · C 20g · F 0g',a:'150g'},
+        {n:'Hard boiled eggs',m:'P 12g · C 0g · F 7g',a:'2 eggs'},
+      ],note:'Do not skip this. Hunger at 6 PM leads to overeating at night.'},
+      {time:'8:00 PM',name:'Dinner — lean and light',kcal:520,foods:[
+        {n:'Fish fillet or chicken (grilled, no cream)',m:'P 42g · C 0g · F 6g',a:'180g'},
+        {n:'Roasted sweet potato',m:'P 2g · C 25g · F 0g',a:'100g'},
+        {n:'Large salad — cucumber, tomato, carrot',m:'P 2g · C 10g · F 0g',a:'unlimited'},
+        {n:'Curd',m:'P 5g · C 4g · F 4g',a:'100g'},
+      ],note:'Keep carbs lower at night, not zero. Volume from salad keeps you full without the calories.'},
+      {time:'Before bed',name:'Sleep protein (optional)',kcal:120,foods:[
+        {n:'Curd with cinnamon',m:'P 10g · C 8g · F 5g',a:'150g'},
+      ],note:'Cinnamon with curd before bed — shown to improve insulin sensitivity. Good for HbA1c management.'},
+    ]
+  },
+  mma:{
+    kcal:2500,p:170,c:270,f:60,
+    meals:[
+      {time:'7:00 AM',name:'Breakfast',kcal:500,foods:[
+        {n:'Oats + 3 eggs + banana + seeds',m:'Same as gym day',a:'same portions'},
+      ],note:'Start the day right regardless of when MMA is. Morning protein sets the tone.'},
+      {time:'12:30 PM',name:'Lunch — bigger carb load',kcal:650,foods:[
+        {n:'Chicken breast or fish fillet',m:'P 45g · C 0g · F 5g',a:'200g'},
+        {n:'White rice (easier digestion pre-sparring)',m:'P 5g · C 65g · F 0g',a:'200g cooked'},
+        {n:'Vegetables + curd',m:'P 8g · C 15g · F 4g',a:'as usual'},
+      ],note:'Bigger rice portion — you will burn it in sparring. White over brown here for faster digestion.'},
+      {time:'2 hrs before MMA',name:'Pre-MMA snack',kcal:350,foods:[
+        {n:'Banana + dates (2–3)',m:'P 2g · C 45g · F 0g',a:'1 banana + 3 dates'},
+        {n:'Super You protein (half scoop)',m:'P 13g · C 3g · F 1g',a:'half scoop in water'},
+      ],note:'Fast carbs + light protein. No fats here — causes nausea during hard sparring. Exactly 2 hrs before.'},
+      {time:'Post-MMA',name:'Recovery meal',kcal:500,foods:[
+        {n:'Super You protein shake',m:'P 28g · C 5g · F 3g',a:'1 full scoop'},
+        {n:'Boiled eggs',m:'P 18g · C 0g · F 10g',a:'3 eggs'},
+        {n:'Rice or oats',m:'P 4g · C 45g · F 1g',a:'150g cooked rice'},
+        {n:'Fresh pomegranate juice or fruit',m:'P 1g · C 20g · F 0g',a:'1 glass / 150g'},
+      ],note:'MMA burns 400–700 kcal. Do NOT undereat post-MMA. Pomegranate has anti-inflammatory polyphenols.'},
+      {time:'Night',name:'Dinner — light but protein-rich',kcal:480,foods:[
+        {n:'Fish or chicken (grilled or light curry)',m:'P 40g · C 0g · F 6g',a:'160g'},
+        {n:'Salad + roasted vegetables',m:'P 3g · C 12g · F 2g',a:'big bowl'},
+        {n:'Curd',m:'P 5g · C 4g · F 4g',a:'100g'},
+      ],note:'Simple at night. Body is in repair mode after MMA — protein is the priority.'},
+    ]
+  },
+  rest:{
+    kcal:2000,p:165,c:160,f:65,
+    meals:[
+      {time:'8:00 AM',name:'Breakfast — high protein, lower carb',kcal:450,foods:[
+        {n:'Whole eggs scrambled',m:'P 24g · C 0g · F 14g',a:'4 eggs'},
+        {n:'Oats (smaller portion)',m:'P 4g · C 18g · F 2g',a:'40g dry'},
+        {n:'Mixed nuts and seeds',m:'P 6g · C 6g · F 16g',a:'30g'},
+        {n:'Seasonal fruit',m:'P 1g · C 15g · F 0g',a:'1 serving'},
+      ],note:'No training today so no big carb load needed. Protein stays high every day.'},
+      {time:'1:00 PM',name:'Lunch',kcal:520,foods:[
+        {n:'Chicken or fish',m:'P 45g · C 0g · F 5g',a:'200g'},
+        {n:'Dal or rajma (protein + fibre)',m:'P 12g · C 30g · F 2g',a:'150g cooked'},
+        {n:'Vegetables + salad',m:'P 3g · C 10g · F 1g',a:'large portion'},
+        {n:'Curd',m:'P 5g · C 4g · F 4g',a:'100g'},
+      ],note:'Dal over rice on rest days — adds protein and fibre, lowers glycaemic impact. Good for HbA1c.'},
+      {time:'4:30 PM',name:'Snack',kcal:260,foods:[
+        {n:'Mixed nuts (almonds + walnuts)',m:'P 5g · C 5g · F 16g',a:'30g'},
+        {n:'Hard boiled eggs',m:'P 12g · C 0g · F 7g',a:'2 eggs'},
+      ],note:'Lower carb snack on rest day. Nuts and eggs — fat and protein without the spike.'},
+      {time:'7:30 PM',name:'Dinner — cleanest meal of the week',kcal:480,foods:[
+        {n:'Grilled fish or chicken',m:'P 42g · C 0g · F 5g',a:'180g'},
+        {n:'Stir-fried palak + broccoli + capsicum',m:'P 5g · C 10g · F 3g',a:'200g'},
+        {n:'Curd or boiled egg whites',m:'P 10g · C 4g · F 3g',a:'150g / 4 whites'},
+      ],note:'Rest day dinner is your leanest meal. No rice tonight. This is where fat loss really happens.'},
+    ]
+  }
+};
+
+const PHASES = [
+  {num:'Phase 1',name:'Re-adaptation',weeks:'Weeks 1–7 · Deload week 8',rpe:'7–8',rir:'2–3',sets:'3',reps:'6–10 main lifts',plyo:'Low — quality only',load:'+2.5kg when top range hit',goal:'Relearn patterns, no grinding',pct:40},
+  {num:'Phase 2',name:'Overload',weeks:'Weeks 9–15 · Deload week 16',rpe:'8–9',rir:'1–2',sets:'3–4',reps:'5–8 main, 10–15 iso',plyo:'Medium — add complexity',load:'+2.5–5kg on compounds',goal:'Drive strength, add drop sets',pct:0},
+  {num:'Phase 3',name:'Peak intensity',weeks:'Weeks 17–23 · Deload week 24',rpe:'9–9.5',rir:'0–1',sets:'4',reps:'4–6 main, 12–15 iso',plyo:'High — reactive + loaded',load:'+2.5kg or add a set',goal:'Near-failure, rest-pause sets',pct:0},
+];
+
+const PROG_RULES = [
+  {title:'Double progression (main lifts)',items:[
+    'Set a rep range — e.g. 3×6–8. Start at the bottom (3×6).',
+    'Each session try to add 1–2 reps across your sets.',
+    'Once you hit the top across all sets (3×8), add 2.5–5kg next session.',
+    'If you cannot match last week\'s reps at same weight — do not add load.'
+  ]},
+  {title:'Power and plyo progression',items:[
+    'Box jumps: progress by height (50cm → 60cm → 70cm), not reps.',
+    'Broad jumps: mark the distance and beat it weekly.',
+    'KB complex: increase speed and hip snap before adding weight.',
+    'Power clean: video form every 2 weeks. Technique is the load.'
+  ]},
+  {title:'Core and abs progression',items:[
+    'Ab wheel: knees → full rollout → pause at extension.',
+    'Hanging leg raise: bent knee → straight → toes to bar → ankle weight.',
+    'Plank: standard → RKC plank → weighted plate on back.',
+    'Landmine rotation: increase speed before increasing load.'
+  ]},
+  {title:'Isolation and weak points',items:[
+    'Cable laterals, face pulls, curls: add reps first (up to 20), then weight.',
+    'Add one drop set to the final set of each isolation in phases 2 and 3.',
+    'Calf raises: 3 sec down, pause at bottom. Progress reps to 20 before adding weight.',
+    'Leg curl: control the eccentric. Swinging = weight is too heavy.'
+  ]},
+];
+
+const DELOAD_SESSIONS = [
+  {label:'Week 8 deload',sessions:[
+    {title:'Monday — lower body (35–40 min)',checks:[
+      'Zercher squat: 2×5 at 70% usual weight — focus on position',
+      'Box jumps: 2×3 at moderate height — no max effort',
+      'Goblet squat: 2×8 light — mobility focus',
+      'Lying leg curl: 2×10 controlled — eccentric only',
+      'Calf raise: 2×12 slow — no conditioning finisher',
+    ]},
+    {title:'Thursday — upper body (35–40 min)',checks:[
+      'Pull-ups: 2×5 bodyweight only — no added load',
+      'Landmine row: 2×6 each side — light load',
+      'Incline DB press: 2×8 at 60% — slow and controlled',
+      'Face pull: 2×15 — always therapeutic, keep doing this',
+      'Cable lateral raise: 2×12 light — just pump, no strain',
+    ]},
+    {title:'End of deload — assessment',checks:[
+      'Weigh Monday morning fasted — on track for ~0.4kg/week loss?',
+      'Take front, side, back photos — compare to 8 weeks ago',
+      'Test a key lift: pull-up max reps or zercher squat 5RM',
+      'MMA check: faster, less gassed, more technical than before?',
+      'If fat loss stalled 3+ weeks: drop 100–150 kcal on rest days only',
+      'If energy crashing: calories too low — add 100–150 kcal to MMA days',
+    ]},
+  ]},
+  {label:'Week 16 deload',sessions:[
+    {title:'Same protocol as Week 8',checks:[
+      'Same two gym sessions (Mon + Thu) at 60–70% volume',
+      'Light MMA drilling only — no hard sparring',
+      'Sleep 8+ hrs this week specifically',
+      'Full Saturday mobility session still happens',
+      'Walk 20–30 min daily to stay active without stressing',
+    ]},
+    {title:'Week 16 assessment',checks:[
+      'Photo comparison from week 8 — visible abs starting to show?',
+      'Re-test key lifts — stronger than week 8?',
+      'Target weight check: should be ~72–73 kg by now',
+      'Body fat estimate: should be approaching 12–14%',
+      'Adjust calories if needed before entering Phase 3',
+    ]},
+  ]},
+  {label:'Week 24 deload',sessions:[
+    {title:'Final assessment week',checks:[
+      'Full measurement session: weight, photos, key lift tests',
+      'Compare to week 0 photos — the transformation is here',
+      'Target: 67–68 kg at 8–10% body fat',
+      'MMA performance: measurably faster, more explosive',
+      'Decide: maintain this level, cut further, or start a strength phase',
+    ]},
+  ]},
+];
+
+const SIGNALS = [
+  'Losing strength for 2+ weeks despite good sleep and nutrition',
+  'Dreading gym or MMA — usually CNS fatigue, not mental',
+  'Poor sleep even when you have the time — elevated cortisol signal',
+  'Resting heart rate 8–10 BPM higher than usual in the morning',
+  'Joint pain or soreness that does not resolve after 48 hrs',
+  'Any 3 of the above simultaneously — take deload regardless of programme week',
+];
+
+let activeDay = new Date().getDay();
+let activeNutrition = 'gym';
+let activeDeload = 0;
+
+function switchView(v) {
+  ['workout','nutrition','progress','deload'].forEach(x => {
+    document.getElementById('view-'+x).classList.toggle('active', x===v);
+    document.getElementById('ni-'+x).classList.toggle('on', x===v);
+    document.getElementById('nl-'+x).classList.toggle('on', x===v);
+  });
+  document.getElementById('mainScreen').scrollTop = 0;
+}
+
+function updateClock() {
+  const now = new Date();
+  const h = now.getHours().toString().padStart(2,'0');
+  const m = now.getMinutes().toString().padStart(2,'0');
+  document.getElementById('clock').textContent = h+':'+m;
+}
+
+function buildWeekStrip() {
+  const strip = document.getElementById('weekStrip');
+  strip.innerHTML = WEEK.map((d,i) => {
+    const cls = [
+      'day-pill',
+      d.type==='mma'?'mma-day':'',
+      d.type==='rest'?'rest-day':'',
+      i===activeDay?'active':''
+    ].filter(Boolean).join(' ');
+    return `<div class="${cls}" onclick="selectDay(${i})">
+      <div class="day-pill-lbl">${d.day.toUpperCase()}</div>
+      <div class="day-pill-abbr">${d.label}</div>
+      <div class="day-pill-type">${d.type}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectDay(i) {
+  activeDay = i;
+  buildWeekStrip();
+  buildSession();
+}
+
+function buildSession() {
+  const d = WEEK[activeDay];
+  const el = document.getElementById('sessionContent');
+  if(d.type==='rest') {
+    el.innerHTML = `<div class="rest-card"><div class="rest-icon">😴</div><div class="rest-title">Rest day</div><div class="rest-sub">Recovery is where adaptation happens.<br>Sleep 7–8 hrs. Walk if you want to move.<br>Eat at rest day calories (2,000 kcal).</div></div>`;
+    return;
+  }
+  if(d.type==='mma') {
+    el.innerHTML = `<div class="rest-card"><div class="rest-icon">🥊</div><div class="rest-title">MMA day</div><div class="rest-sub">Focus: technique, sparring, conditioning.<br>Pre-MMA meal 2 hrs before.<br>Post-MMA recovery meal within 45 min.<br>Coconut water for electrolytes.</div></div>`;
+    return;
+  }
+  const s = SESSIONS[d.sessionIdx];
+  let html = `<div class="session-card">
+    <div class="session-banner">
+      <div class="session-tag">${s.tag}</div>
+      <div class="session-name">${s.name}</div>
+      <div class="session-meta">${s.meta}</div>
+    </div>`;
+  s.blocks.forEach(b => {
+    html += `<div class="block-label">${b.label}</div>`;
+    b.exs.forEach((ex,idx) => {
+      html += `<div class="ex-item" onclick="toggleEx(this)">
+        <div class="ex-num">${idx+1}</div>
+        <div class="ex-body">
+          <div class="ex-name">${ex.n}</div>
+          <div class="ex-sets">${ex.s}</div>
+          <div class="ex-note">${ex.note}</div>
+        </div>
+      </div>`;
+    });
+  });
+  html += `</div>`;
+  html += `<div class="warmup-box"><div class="warmup-label">Warm-up</div><div class="warmup-text">${s.warmup}</div></div>`;
+  html += `<div class="section-gap"></div>`;
+  el.innerHTML = html;
+}
+
+function toggleEx(el) {
+  el.classList.toggle('expanded');
+}
+
+function showNutrition(type) {
+  activeNutrition = type;
+  document.querySelectorAll('.dtype-btn').forEach((b,i) => {
+    b.classList.toggle('active', ['gym','mma','rest'][i]===type);
+  });
+  buildNutrition();
+}
+
+function buildNutrition() {
+  const n = NUTRITION[activeNutrition];
+  let html = `<div class="macro-row">
+    <div class="mac"><div class="mac-lbl">Calories</div><div class="mac-val">${n.kcal}</div><div class="mac-sub">kcal / day</div></div>
+    <div class="mac"><div class="mac-lbl">Protein</div><div class="mac-val">${n.p}g</div><div class="mac-sub">2.2g/kg target</div></div>
+    <div class="mac"><div class="mac-lbl">Carbs</div><div class="mac-val">${n.c}g</div><div class="mac-sub">training fuel</div></div>
+    <div class="mac"><div class="mac-lbl">Fats</div><div class="mac-val">${n.f}g</div><div class="mac-sub">healthy sources</div></div>
+  </div>`;
+  n.meals.forEach(m => {
+    html += `<div class="meal-card">
+      <div class="meal-header" onclick="toggleMeal(this.parentElement)">
+        <span class="meal-time">${m.time}</span>
+        <span class="meal-name">${m.name}</span>
+        <span class="meal-kcal">~${m.kcal} kcal</span>
+        <span class="meal-chevron">›</span>
+      </div>
+      <div class="meal-body">`;
+    m.foods.forEach(f => {
+      html += `<div class="food-row">
+        <div><div class="food-name">${f.n}</div><div class="food-macros">${f.m}</div></div>
+        <div class="food-amount">${f.a}</div>
+      </div>`;
+    });
+    html += `<div class="meal-note-box">${m.note}</div></div></div>`;
+  });
+  html += `<div class="section-gap"></div>`;
+  document.getElementById('nutritionContent').innerHTML = html;
+}
+
+function toggleMeal(el) {
+  el.classList.toggle('open');
+}
+
+function buildProgress() {
+  let html = '';
+  PHASES.forEach((p,i) => {
+    html += `<div class="phase-card">
+      <div class="phase-header">
+        <span class="phase-num">${p.num}</span>
+        ${i===0?'<span class="phase-badge">Current</span>':''}
+      </div>
+      <div class="phase-name">${p.name}</div>
+      <div class="phase-weeks">${p.weeks}</div>
+      <div class="phase-bar"><div class="phase-bar-fill" style="width:${p.pct}%"></div></div>
+      <div class="phase-stats">
+        <div class="pstat"><div class="pstat-lbl">RPE target</div><div class="pstat-val">${p.rpe}</div></div>
+        <div class="pstat"><div class="pstat-lbl">RIR</div><div class="pstat-val">${p.rir}</div></div>
+        <div class="pstat"><div class="pstat-lbl">Working sets</div><div class="pstat-val">${p.sets}</div></div>
+        <div class="pstat"><div class="pstat-lbl">Rep ranges</div><div class="pstat-val">${p.reps}</div></div>
+      </div>
+    </div>`;
+  });
+  html += `<div class="rule-section"><div class="rule-section-title">Progression rules</div>`;
+  PROG_RULES.forEach(r => {
+    html += `<div class="rule-card">
+      <div class="rule-card-header" onclick="toggleRule(this.parentElement)">
+        <span class="rule-card-title">${r.title}</span>
+        <span class="rule-chevron">›</span>
+      </div>
+      <div class="rule-card-body">`;
+    r.items.forEach(item => {
+      html += `<div class="rule-item"><div class="rule-dot"></div><div class="rule-text">${item}</div></div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += `</div><div class="section-gap"></div>`;
+  document.getElementById('progressContent').innerHTML = html;
+}
+
+function toggleRule(el) {
+  el.classList.toggle('open');
+}
+
+function buildDeload() {
+  let html = `<div class="deload-banner">
+    <div class="deload-banner-title">Deload weeks: 8, 16, 24</div>
+    <div class="deload-banner-sub">Not optional — this is when adaptation locks in. Drop volume 40%, keep intensity. 2 gym sessions only. No hard sparring.</div>
+  </div>
+  <div class="deload-weeks">`;
+  DELOAD_SESSIONS.forEach((d,i) => {
+    html += `<button class="dwk ${i===activeDeload?'active':''}" onclick="selectDeload(${i})">${d.label}</button>`;
+  });
+  html += `</div><div id="deloadSessions"></div>`;
+  html += `<div class="signal-card"><div class="signal-title">Signs you need an unplanned deload</div>`;
+  SIGNALS.forEach(s => {
+    html += `<div class="signal-item"><div class="signal-dot"></div><div class="signal-text">${s}</div></div>`;
+  });
+  html += `</div><div class="section-gap"></div>`;
+  document.getElementById('deloadContent').innerHTML = html;
+  renderDeloadSessions();
+}
+
+function selectDeload(i) {
+  activeDeload = i;
+  document.querySelectorAll('.dwk').forEach((b,j) => b.classList.toggle('active', j===i));
+  renderDeloadSessions();
+}
+
+function renderDeloadSessions() {
+  const d = DELOAD_SESSIONS[activeDeload];
+  let html = '';
+  d.sessions.forEach(s => {
+    html += `<div class="deload-session"><div class="deload-session-title">${s.title}</div>`;
+    s.checks.forEach((c,i) => {
+      html += `<div class="check-item">
+        <div class="check-box" onclick="toggleCheck(this)" role="checkbox" aria-checked="false">
+          <span class="check-tick">✓</span>
+        </div>
+        <div class="check-text">${c}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('deloadSessions').innerHTML = html;
+}
+
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  el.setAttribute('aria-checked', el.classList.contains('checked'));
+}
+
+updateClock();
+setInterval(updateClock, 10000);
+buildWeekStrip();
+buildSession();
+buildNutrition();
+buildProgress();
+buildDeload();
+</script>
+</body>
+</html>
